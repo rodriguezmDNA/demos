@@ -4,6 +4,9 @@ from collections import Counter
 
 
 def draw_n_birth_dates(people):
+    '''
+    For a grio
+    '''
     DAYS = range(1,366) 
     return [random.choice(DAYS) for _ in range(1,people+1)]
 

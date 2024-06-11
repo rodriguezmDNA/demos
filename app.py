@@ -42,18 +42,31 @@ stHTML(html_string)
 st.markdown('---')
 
 
-sample_birth_dates = (simulate_birthdate_draws(samples,people))
-counts_dates = tally_shared_birthdates(samples,sample_birth_dates)
+def run_simulation():
+    sample_birth_dates = (simulate_birthdate_draws(samples,people))
+    counts_dates = tally_shared_birthdates(samples,sample_birth_dates)
 
-frequencies_at_least_n_shared = {n_shared: np.mean(np.any(counts_dates >= n_shared,1)) for n_shared in range(2,11)}
+    frequencies_at_least_n_shared = {n_shared: np.mean(np.any(counts_dates >= n_shared,1)) for n_shared in range(2,11)}
 
-frequencies_at_least_n_shared_df = pd.DataFrame.from_dict(frequencies_at_least_n_shared,orient='index').reset_index()
-frequencies_at_least_n_shared_df.columns = ['n','prob']
+    frequencies_at_least_n_shared_df = pd.DataFrame.from_dict(frequencies_at_least_n_shared,orient='index').reset_index()
+    frequencies_at_least_n_shared_df.columns = ['n','prob']
+    frequencies_at_least_n_shared_df['n'] = frequencies_at_least_n_shared_df['n'].astype(int)
+    return frequencies_at_least_n_shared, frequencies_at_least_n_shared_df
 
 ########################################################################
 
+frequencies_at_least_n_shared, frequencies_at_least_n_shared_df = run_simulation()
+
+
 st.write(f'''
-         To calculate the probabilities, I take {people} random samples from a pool of 365 numbers (each representing a date of birth). This simulates any random group of people. I repeat this {samples} times and tally how many times I see at least two dates repeated.
+         
+         There is a ~`{frequencies_at_least_n_shared[2]:.2%}` chance that 2 or more people share a birthday in a group of `{people}` people (simulating `{samples}` groups).
+
+         You can compare with the results in [www.bdayprob.com](https://www.bdayprob.com)
+
+         ----
+
+         To calculate the probabilities, I take `{people}` random samples from a pool of 365 numbers (each representing a date of birth). This simulates any random group of people. I repeat this `{samples}` times and tally how many times I see at least two dates repeated.
 
          With the results of the simulation, I further calculate the probabilities of larger subsets sharing a birthdate.
 
@@ -63,12 +76,15 @@ st.write(f'''
 
 st.markdown('---')
 
+st.write('Hover over the points to look at the probability that at least `n` people will share a birthday.')
+
+if st.button("Re-run simulation"):
+    frequencies_at_least_n_shared, frequencies_at_least_n_shared_df = run_simulation()
 
 st.subheader('Altair interactive visualization')
 
-
-chart = alt.Chart(frequencies_at_least_n_shared_df).mark_line(point=alt.OverlayMarkDef(color="black")).encode(
-    x=alt.X('n:Q', title='At least n people', axis=alt.Axis(tickMinStep=1)),
+chart = alt.Chart(frequencies_at_least_n_shared_df).mark_line(point=alt.OverlayMarkDef(color="#0366fc", size=100)).encode(
+    x=alt.X('n:Q', title='At least n people', axis=alt.Axis(format='d')),
     y=alt.Y('prob', title='Probability')
 ).properties(
     title=f'Probabilities that at least n people shared a birthdate in a group of size {people}',
@@ -78,10 +94,9 @@ chart = alt.Chart(frequencies_at_least_n_shared_df).mark_line(point=alt.OverlayM
     color='black'
 ).configure_line(
     strokeDash=[4, 4]
-)
+).interactive()
 
 st.altair_chart(chart, use_container_width=True)
-
 
 # Plotting with Seaborn
 st.subheader('Seaborn static visualization')
